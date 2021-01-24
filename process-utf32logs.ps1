@@ -1,6 +1,8 @@
-If(-not (Get-Module -ListAvailable -Name AWS.Tools.*)){
-    Install-Module -Name AWS.Tools.Installer -Scope CurrentUser
-    Install-AWSToolsModule AWS.Tools.EC2,AWS.Tools.S3 -CleanUp -Scope CurrentUser
+#requires -version 6.0
+
+If(-not (Get-Module -ListAvailable -Name AWS.Tools.S3)){
+    Install-Module -Name AWS.Tools.Installer -Scope CurrentUser -AllowClobber -Force
+    Install-AWSToolsModule AWS.Tools.S3 -Scope CurrentUser -Force
 }
 
 #for testing so i dont need to keep downloading files.
@@ -87,19 +89,15 @@ Function Get-Files([psobject]$S3Object, [string]$region){
         $format = "yyyyMMdd"
         $FileDate = [datetime]::parseexact($filename.Split('-')[0], $format, $null)
 
-        Write-Output "File is $filename and date is $filedate"
         $OutPath = Join-Path $CustomerPath $folder
         If(-not (Test-Path $OutPath)){
             $Null = New-Item -ItemType Directory $OutPath
         }
 
-
-        #start-sleep -Seconds 15
-
         if ((Get-Date $FileDate) -ge (Get-Date $ProcessDate)) {
             $localFilePath = Join-Path $OutPath $FileName
             IF($WhatIF){
-                "WhatIF: Downloading '$($object.Key)' to '$localFilePath' from '$region'"
+                Write-Output "WhatIF: Downloading '$($object.Key)' to '$localFilePath' from '$region'"
             }else{
                 $null = Copy-S3Object -BucketName $bucket -Key $object.Key -LocalFile $localFilePath -Region $region -Force 
             }
@@ -118,7 +116,6 @@ Function Convert-Files([string]$Path){
         
         If(!($_.PSIsContainer)){
             $FileEncode = (Get-FileEncoding $_).HeaderName
-            #Write-Output "$_ is encoded with $FileEncode"
 
             If($FileEncode -eq 'UTF-32'){
                 Write-OUtput "Converting $($_.Name) to UTF-32 in $CustomerOutputPath"
@@ -129,11 +126,7 @@ Function Convert-Files([string]$Path){
     }
 }
 
-#toggle these lines for testing locally
 $BaseDir = Get-Location
-#$Global:BaseDir = Split-Path $MyInvocation.MyCommand.Path -Parent
-
-#Add $baseDir to this after testing
 $BaseConfig = "$BaseDir\config.json"
 
 # Load and parse the JSON configuration file
@@ -189,7 +182,7 @@ foreach ($bucket in $buckets) {
     $OutputFolder = JOin-Path $($Config.WorkingDir) $folder $bucket
 
     IF($WhatIF){
-        "WhatIF: Uploading '$($OutputFolder)' to '$bucket' in '$region'"
+        Write-Output "WhatIF: Uploading '$($OutputFolder)' to '$bucket' in '$region'"
     }else{
         $null = Write-S3Object -Region $Region -BucketName $bucket -Folder $OutputFolder -KeyPrefix $prefix -Recurse -Force
     }
