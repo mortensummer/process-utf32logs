@@ -118,7 +118,7 @@ Function Convert-Files([string]$Path){
             $FileEncode = (Get-FileEncoding $_).HeaderName
 
             If($FileEncode -eq 'UTF-32'){
-                Write-OUtput "Converting $($_.Name) to UTF-32 in $CustomerOutputPath"
+                Write-OUtput "Converting $($_.Name) from UTF-32 in $CustomerOutputPath"
                 Get-Content -Encoding utf32 -Path $_ | Out-File -Encoding utf8 $(Join-Path $CustomerOutputPath $_.Name) -Force
                 
             }
@@ -166,24 +166,31 @@ foreach ($bucket in $buckets) {
     Write-Output "Downloading '$($Bucket)' in '$($Region)'... "
 
     $Objs = Get-S3Object -BucketName $bucket -Region $Region -Prefix $($Config.Prefix)
-        
-    $CustomerPath = Join-Path $($Config.WorkingDir) $bucket
-    If(-not (Test-Path $CustomerPath)){
-        $null = New-Item -ItemType Directory $CustomerPath
-    }
-
-    # Download the files
-    Get-Files -S3Object $Objs -Region $Region
-
-    # Convert the files
-    Convert-Files $CustomerPath $bucket
-
-    Write-Output "Writing back to S3..."
-    $OutputFolder = JOin-Path $($Config.WorkingDir) $folder $bucket
-
-    IF($WhatIF){
-        Write-Output "WhatIF: Uploading '$($OutputFolder)' to '$bucket' in '$region'"
+    
+    If($Objs.Count -gt 0){
+        $CustomerPath = Join-Path $($Config.WorkingDir) $bucket
+        If(-not (Test-Path $CustomerPath)){
+            $null = New-Item -ItemType Directory $CustomerPath
+        }
+    
+        # Download the files
+        Get-Files -S3Object $Objs -Region $Region
+    
+        # Convert the files
+        Convert-Files $CustomerPath $bucket
+    
+        Write-Output "Writing back to S3..."
+        $OutputFolder = JOin-Path $($Config.WorkingDir) $folder $bucket
+    
+        IF($WhatIF){
+            Write-Output "WhatIF: Uploading '$($OutputFolder)' to '$bucket' in '$region'"
+        }else{
+            $null = Write-S3Object -Region $Region -BucketName $bucket -Folder $OutputFolder -KeyPrefix $prefix -Recurse -Force
+        }
     }else{
-        $null = Write-S3Object -Region $Region -BucketName $bucket -Folder $OutputFolder -KeyPrefix $prefix -Recurse -Force
+        Write-Output "No files found to download. Exiting Process."
+        Exit
     }
+
+    
 }
