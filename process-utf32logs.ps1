@@ -84,6 +84,7 @@ Function Get-Files([psobject]$S3Object, [string]$region){
     foreach($object in $S3Object) {
         $folder= $Object.Key.Substring($prefix.Length).Split('/')[0]
         $filename = $Object.Key.Substring($prefix.Length).Split('/')[1]
+        $format = "yyyyMMdd"
         $FileDate = [datetime]::parseexact($filename.Split('-')[0], $format, $null)
 
         Write-Output "File is $filename and date is $filedate"
@@ -91,6 +92,9 @@ Function Get-Files([psobject]$S3Object, [string]$region){
         If(-not (Test-Path $OutPath)){
             $Null = New-Item -ItemType Directory $OutPath
         }
+
+
+        #start-sleep -Seconds 15
 
         if ((Get-Date $FileDate) -ge (Get-Date $ProcessDate)) {
             $localFilePath = Join-Path $OutPath $FileName
@@ -148,6 +152,7 @@ $folder = "UTF_Output_$Timestamp"
 
 #Get the process from date into something comparable
 $ProcessDate  = [datetime]::parseexact($($Config.ProcessDate), "yyyyMMdd", $null)
+$prefix = $Config.Prefix
 
 # Authenticate with AWS S3
 try{
@@ -163,6 +168,7 @@ try{
 # Get some buckets. 
 $Buckets = $config.Buckets | Get-Member -MemberType 'NoteProperty' | Select-Object -ExpandProperty Name
 foreach ($bucket in $buckets) {
+
     $Region = $($config.Buckets.$bucket.Region)
     Write-Output "Downloading '$($Bucket)' in '$($Region)'... "
 
@@ -183,7 +189,7 @@ foreach ($bucket in $buckets) {
     $OutputFolder = JOin-Path $($Config.WorkingDir) $folder $bucket
 
     IF($WhatIF){
-        "WhatIF: UPloading '$($OutputFolder)' to '$bucket' in '$region'"
+        "WhatIF: Uploading '$($OutputFolder)' to '$bucket' in '$region'"
     }else{
         $null = Write-S3Object -Region $Region -BucketName $bucket -Folder $OutputFolder -KeyPrefix $prefix -Recurse -Force
     }
