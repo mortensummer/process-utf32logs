@@ -2,7 +2,7 @@
 
 If(-not (Get-Module -ListAvailable -Name AWS.Tools.S3)){
     Install-Module -Name AWS.Tools.Installer -Scope CurrentUser -AllowClobber -Force
-    Install-AWSToolsModule AWS.Tools.S3 -Scope CurrentUser -Force
+    Install-AWSToolsModule AWS.Tools.EC2, AWS.Tools.S3 -Scope CurrentUser -Force
 }
 
 #for testing so i dont need to keep downloading files.
