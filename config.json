@@ -1,0 +1,16 @@
+{
+    "Buckets":{
+        "tpy.customer1":{
+            "Region":"eu-west-2"
+        },
+        "tpy.customer2":{
+            "Region":"eu-west-2"
+        },
+        "tpy.customer3":{
+            "Region":"eu-west-2"
+        }
+    },
+    "WorkingDir":"Z:\\UTF-WorkingFolder",
+    "Prefix":"SYS_Logs/",
+    "ProcessDate":"20201222"
+}
